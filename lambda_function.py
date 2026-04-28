@@ -2,10 +2,12 @@ import boto3
 import json
 import string
 import random
+import os
 
-# Connect to DynamoDB
-dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('urls')
+# Connect to DynamoDB only when needed
+def get_table():
+    dynamodb = boto3.resource('dynamodb', region_name=os.environ.get('AWS_REGION', 'ap-south-1'))
+    return dynamodb.Table('urls')
 
 def generate_short_code():
     """Generate random 6 character code"""
@@ -32,7 +34,7 @@ def lambda_handler(event, context):
             short_code = generate_short_code()
             
             # Save to DynamoDB
-            table.put_item(Item={
+            get_table().put_item(Item={
                 'short_code': short_code,
                 'original_url': original_url
             })
@@ -61,7 +63,7 @@ def lambda_handler(event, context):
             short_code = event['pathParameters']['code']
             
             # Fetch from DynamoDB
-            response = table.get_item(
+            response = get_table().get_item(
                 Key={'short_code': short_code}
             )
             
